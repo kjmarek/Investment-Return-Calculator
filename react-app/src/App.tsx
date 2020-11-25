@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import calculate from './functions/functions';
 import theme from './theme';
@@ -10,9 +10,7 @@ import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
-import Input from '@material-ui/core/Input';
+import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -44,14 +42,27 @@ const useStyles = makeStyles((theme: Theme) => ({
 function App() {
   const classes = useStyles();
 
-  const [values, setValues] = React.useState({
-    amount: '',
-  });
+  const [yearsInv, setYearsInv] = useState<String>('');
+  const [inv, setInv] = useState<String>('');
 
-  const handleChange = (prop: any) => (event: any) => {
-    setValues({ ...values, [prop]: event.target.value });
+  const handleYearsInv = (event: any) => {
+    const re = /^[1-9]{1}$|^[1-9]{1}[0-9]{1}$/;
+    if (event.target.value === '' || re.test(event.target.value)) {
+      setYearsInv(event.target.value);
+    }
   };
 
+  const handleInv = (event: any) => {
+    const re = /^\d{0,2}(\.\d{1,2})?$/;
+    if (event.target.value === '' || re.test(event.target.value)) {
+      setInv(event.target.value);
+    }
+  };
+
+
+  const submitForm = (event: any) => {
+    event.preventDefault();
+  }
   /*
   Improvements
     * put separate card for inputs with fields and calculate button
@@ -85,17 +96,42 @@ function App() {
                 justify="center"
                 spacing={3}
               >
-                <Grid item xs={12}>
-                  <FormControl fullWidth className={classes.formMargin}>
-                    <InputLabel htmlFor="standard-adornment-amount" color="secondary">Amount</InputLabel>
-                    <Input
-                      id="standard-adornment-amount"
-                      value={values.amount}
-                      onChange={handleChange('amount')}
-                      startAdornment={<InputAdornment position="start">$</InputAdornment>}
+                <Grid item xs={6}>
+                  <form className={classes.formMargin} onSubmit={submitForm} autoComplete="off">
+                    <TextField
                       color={"secondary"}
+                      margin="normal"
+                      required
+                      fullWidth
+                      id="yearsInv"
+                      label="Years Investing"
+                      name="yearsInv"
+                      value={yearsInv}
+                      onChange={handleYearsInv}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start"> </InputAdornment>,
+                      }}
+                      autoFocus
                     />
-                  </FormControl>
+                  </form>
+                </Grid>
+                <Grid item xs={6}>
+                  <form className={classes.formMargin} onSubmit={submitForm} autoComplete="off">
+                    <TextField
+                      color={"secondary"}
+                      margin="normal"
+                      required
+                      fullWidth
+                      id="inv"
+                      label="Investment Per Year"
+                      name="inv"
+                      value={inv}
+                      onChange={handleInv}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      }}
+                    />
+                  </form>
                 </Grid>
                 <Button 
                   variant="contained"
