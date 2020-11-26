@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import clsx from 'clsx';
 
 import calculate from './functions/functions';
 import theme from './theme';
+import logo from './images/LogoPng.png';
 
 import { makeStyles, Theme, ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -13,11 +15,11 @@ import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 
-import logo from './images/LogoPng.png';
+import { LineChart, Line, XAxis, YAxis, Label, ResponsiveContainer, Tooltip } from 'recharts';
 
 const useStyles = makeStyles((theme: Theme) => ({
   mainContent: {
-    paddingTop: theme.spacing(4),
+    paddingTop: theme.spacing(0),
     paddingBottom: theme.spacing(4)
   },
   heroContent: {
@@ -28,28 +30,28 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   paper: {
     padding: theme.spacing(2),
-    /*     display: 'flex',
-        overflow: 'auto',
-        flexDirection: 'column', */
   },
   button: {
     marginTop: theme.spacing(2),
     marginBottom: theme.spacing(2)
   },
-  formMargin: {
-    margin: theme.spacing(1)
+  fixedHeight: {
+    height: 280
   }
 }));
 
 function App() {
   const classes = useStyles();
+  const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
 
   interface yearValue {
-    year:  number,
+    year: number,
     value: number
   }
 
   const [data, setData] = useState<yearValue[]>([]);
+  const [total, setTotal] = useState<String>('');
+  const [years, setYears] = useState<String>('');
   const [calculated, setCalculated] = useState<boolean>(false);
 
   const [yearsInv, setYearsInv] = useState<String>('');
@@ -104,14 +106,18 @@ function App() {
   const submitForm = (event: any) => {
     event.preventDefault();
 
-    setData(calculate(Number(yearsInv), Number(yearsRet), Number(inv), Number(retPct), Number(divPct), Number(divGrowth)));
+    var payload: yearValue[] = calculate(Number(yearsInv), Number(yearsRet), Number(inv), Number(retPct), Number(divPct), Number(divGrowth))
+
+    setData(payload);
+    setTotal("$" + new Intl.NumberFormat('en').format(payload[payload.length - 1].value))
+    setYears(payload.length.toString())
     setCalculated(true);
   }
   /*
   Improvements
-    * put separate card for data grid with the data from each year
-    * add graph
-    * add total number
+    * add total number same height and better looking, show yearly table button onClick show the table
+    * add loading spinner before the calculation and stop it once done
+    * add table at the bottom with the values of everything (dividends for each year, value each year, total div return, etc.)
     * allow for any variation of investing/retired with inputs
   */
 
@@ -138,7 +144,7 @@ function App() {
           </Grid>
         </Container>
       </div>
-      <Container maxWidth="md" className={classes.mainContent}>
+      <Container maxWidth="lg" className={classes.mainContent}>
         <Grid
           container
           justify="center"
@@ -253,7 +259,6 @@ function App() {
                     type="submit"
                     variant="contained"
                     className={classes.button}
-                  /* onClick={() => calculate(20, 40000, 20, 10, 3, 7)} */
                   >
                     Calculate
                   </Button>
@@ -263,14 +268,65 @@ function App() {
           </Grid>
           {calculated && (
             <>
-              <Grid item xs={12} md={12} lg={2}>
-                <Paper className={classes.paper}>
-                  Total = 25,000
+              <Grid item xs={12} md={12} lg={3}>
+                <Paper className={fixedHeightPaper}>
+                  <Typography component="p" variant="h4">
+                    {total}
+                  </Typography>
+                  <Typography color="textSecondary">
+                    ending portfolio value after {years} years
+                </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} md={12} lg={10}>
-                <Paper className={classes.paper}>
-                  This is where the graph will go after the calculations
+              <Grid item xs={12} md={12} lg={9}>
+                <Paper className={fixedHeightPaper}>
+                  <ResponsiveContainer>
+                    <LineChart
+                      data={data}
+                      margin={{
+                        top: 16,
+                        right: 16,
+                        bottom: 24,
+                        left: 24,
+                      }}
+                    >
+                      <XAxis dataKey="year" stroke={theme.palette.text.secondary}>
+                        <Label
+                          position="bottom"
+                          style={{ textAnchor: 'middle', fill: theme.palette.text.primary }}
+                        >
+                          Year
+                        </Label>
+                      </XAxis>
+                      <YAxis stroke={theme.palette.text.secondary}
+                        tickFormatter={function (value) {
+                          if (typeof value === "number") {
+                            return "$" + new Intl.NumberFormat('en').format(value);
+                          }
+                          else {
+                            return value;
+                          }
+                        }}
+                      />
+                      <Tooltip
+                        cursor={false}
+                        labelStyle={{ color: theme.palette.text.primary }}
+                        itemStyle={{ color: theme.palette.text.primary }}
+                        formatter={function (value, name) {
+                          if (typeof value === "number") {
+                            return ["$" + new Intl.NumberFormat('en').format(value), 'Value'];
+                          }
+                          else {
+                            return ["$" + value, 'Value'];
+                          }
+                        }}
+                        labelFormatter={function (value) {
+                          return `Year ${value}`;
+                        }}
+                      />
+                      <Line type="monotone" dataKey="value" stroke={theme.palette.success.main} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </Paper>
               </Grid>
             </>
