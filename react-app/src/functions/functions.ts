@@ -34,7 +34,21 @@ export default function calculate(yearsInv: number, yearsRet: number, inv: numbe
         yearlyInvestments.push({year: i, investmentValue: inv, dividends: inv * (divPct * .01)});
     }
 
-    console.log(yearlyInvestments);
+    /*
+    basic calculate yearly total just adding the values invested
+    */
+    for (var i = 1; i <= yearsInv; i++) {
+        var total = 0;
+        if (i === 1) {
+            total = total + yearlyInvestments[i - 1].investmentValue;
+        }
+        else {
+            total = total + yearlyTotals[i - 2].value + yearlyInvestments[i - 1].investmentValue;
+        }
+        yearlyTotals.push({year: i, value: total})
+    }
 
-    return yearsInv;
+    console.log(yearlyTotals);
+
+    return yearlyTotals;
 }

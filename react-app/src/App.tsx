@@ -44,6 +44,14 @@ const useStyles = makeStyles((theme: Theme) => ({
 function App() {
   const classes = useStyles();
 
+  interface yearValue {
+    year:  number,
+    value: number
+  }
+
+  const [data, setData] = useState<yearValue[]>([]);
+  const [calculated, setCalculated] = useState<boolean>(false);
+
   const [yearsInv, setYearsInv] = useState<String>('');
   const [yearsRet, setYearsRet] = useState<String>('');
   const [inv, setInv] = useState<String>('');
@@ -96,7 +104,8 @@ function App() {
   const submitForm = (event: any) => {
     event.preventDefault();
 
-    calculate(Number(yearsInv), Number(yearsRet), Number(inv), Number(retPct), Number(divPct), Number(divGrowth));
+    setData(calculate(Number(yearsInv), Number(yearsRet), Number(inv), Number(retPct), Number(divPct), Number(divGrowth)));
+    setCalculated(true);
   }
   /*
   Improvements
@@ -252,16 +261,20 @@ function App() {
               </form>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={12} lg={2}>
-            <Paper className={classes.paper}>
-              Total = 25,000
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={12} lg={10}>
-            <Paper className={classes.paper}>
-              This is where the graph will go after the calculations
-            </Paper>
-          </Grid>
+          {calculated && (
+            <>
+              <Grid item xs={12} md={12} lg={2}>
+                <Paper className={classes.paper}>
+                  Total = 25,000
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={12} lg={10}>
+                <Paper className={classes.paper}>
+                  This is where the graph will go after the calculations
+                </Paper>
+              </Grid>
+            </>
+          )}
         </Grid>
       </Container>
     </ThemeProvider>
