@@ -3,7 +3,9 @@ import clsx from 'clsx';
 
 import calculate from './functions/functions';
 import theme from './theme';
-import logo from './images/LogoPng.png';
+
+import Table from './Table';
+import { yearValue } from './interfaces/yearValue';
 
 import { makeStyles, Theme, ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -44,10 +46,26 @@ function App() {
   const classes = useStyles();
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
 
-  interface yearValue {
-    year: number,
-    value: number
-  }
+  function abbreviateNumber(value: number) {
+    var newRes = value.toString();
+    if (value >= 1000) {
+        var suffixes = ["", "k", "m", "b","t"];
+        var suffixNum = Math.floor( (""+value).length/3 );
+        var shortValue = 0;
+        var shortRes = '';
+        for (var precision = 2; precision >= 1; precision--) {
+            shortValue = parseFloat( (suffixNum !== 0 ? (value / Math.pow(1000,suffixNum) ) : value).toPrecision(precision));
+            shortRes = shortValue.toString();
+            var dotLessShortValue = (shortValue + '').replace(/[^a-zA-Z 0-9]+/g,'');
+            if (dotLessShortValue.length <= 2) { break; }
+        }
+        if (shortValue % 1 !== 0) {
+          shortRes = shortValue.toFixed(1);
+        }
+        newRes = shortRes+suffixes[suffixNum];
+    }
+    return '$' + newRes;
+}
 
   const [data, setData] = useState<yearValue[]>([]);
   const [total, setTotal] = useState<String>('');
@@ -60,6 +78,7 @@ function App() {
   const [retPct, setRetPct] = useState<String>('');
   const [divPct, setDivPct] = useState<String>('');
   const [divGrowth, setDivGrowth] = useState<String>('');
+  const [divTax, setDivTax] = useState<String>('');
 
   const handleYearsInv = (event: any) => {
     const re = /^[1-9]{1}$|^[1-9]{1}[0-9]{1}$/;
@@ -103,14 +122,21 @@ function App() {
     }
   };
 
+  const handleDivTax = (event: any) => {
+    const re = /^[0-9]{1}$|^[0-9]{1}\.{1}$|^[0-9]{1}\.{1}[0-9]{1,2}$|^[1-4]{1}[0-9]{1}$|^[1-4]{1}[0-9]{1}\.{1}$|^[1-4]{1}[0-9]{1}\.{1}[0-9]{1,2}$/;
+    if (event.target.value === '' || re.test(event.target.value)) {
+      setDivTax(event.target.value);
+    }
+  };
+
   const submitForm = (event: any) => {
     event.preventDefault();
 
-    var payload: yearValue[] = calculate(Number(yearsInv), Number(yearsRet), Number(inv), Number(retPct), Number(divPct), Number(divGrowth))
+    var payload: yearValue[] = calculate(Number(yearsInv), Number(yearsRet), Number(inv), Number(retPct), Number(divPct), Number(divGrowth), Number(divTax))
 
     setData(payload);
-    setTotal("$" + new Intl.NumberFormat('en').format(payload[payload.length - 1].value))
-    setYears(payload.length.toString())
+    setTotal(new Intl.NumberFormat('en', { style: 'currency', currency: 'USD' }).format(payload[payload.length - 1].value));
+    setYears(payload.length.toString());
     setCalculated(true);
   }
   /*
@@ -119,6 +145,7 @@ function App() {
     * add loading spinner before the calculation and stop it once done
     * add table at the bottom with the values of everything (dividends for each year, value each year, total div return, etc.)
     * allow for any variation of investing/retired with inputs
+    * allow for withdraws in retirement (first take from dividends, then from capital gains if overflow: note weird taxes but assume no taxes)
   */
 
   return (
@@ -130,11 +157,6 @@ function App() {
             container
             justify="center"
           >
-            <img
-              src={logo}
-              width="100px"
-              alt="logo"
-            />
             <Typography component="h1" variant="h2" align="center" color="textPrimary" gutterBottom>
               Investment Return Calculator
             </Typography>
@@ -158,7 +180,7 @@ function App() {
                   justify="center"
                   spacing={3}
                 >
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       color={"secondary"}
                       required
@@ -175,7 +197,7 @@ function App() {
                       helperText="Years adding investments (1 - 99)"
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       color={"secondary"}
                       required
@@ -191,7 +213,7 @@ function App() {
                       helperText="Years without adding investments (0 - 99)"
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       color={"secondary"}
                       required
@@ -207,7 +229,7 @@ function App() {
                       helperText="Investment added per year ($1 - 999,999)"
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       color={"secondary"}
                       required
@@ -220,10 +242,10 @@ function App() {
                       InputProps={{
                         startAdornment: <InputAdornment position="start">%</InputAdornment>,
                       }}
-                      helperText="Percent return expected yearly (.01 - 99.99%)"
+                      helperText="Percent return expected yearly (0 - 99.99%)"
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       color={"secondary"}
                       required
@@ -236,10 +258,10 @@ function App() {
                       InputProps={{
                         startAdornment: <InputAdornment position="start">%</InputAdornment>,
                       }}
-                      helperText="Percent dividend return expected yearly (.01 - 99.99%)"
+                      helperText="Percent dividend return expected yearly (0 - 99.99%)"
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       color={"secondary"}
                       required
@@ -252,8 +274,30 @@ function App() {
                       InputProps={{
                         startAdornment: <InputAdornment position="start">%</InputAdornment>,
                       }}
-                      helperText="Percent dividend growth expected yearly (.01 - 99.99%)"
+                      helperText="Percent dividend growth expected yearly (0 - 99.99%)"
                     />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <TextField
+                      color={"secondary"}
+                      required
+                      fullWidth
+                      id="divTax"
+                      label="Dividend Tax Percentage"
+                      name="divTax"
+                      value={divTax}
+                      onChange={handleDivTax}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">%</InputAdornment>,
+                      }}
+                      helperText="Percent dividend tax expected yearly (0 - 49.99%)"
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+
+                  </Grid>
+                  <Grid item xs={4}>
+                    
                   </Grid>
                   <Button
                     type="submit"
@@ -271,7 +315,7 @@ function App() {
               <Grid item xs={12} md={12} lg={3}>
                 <Paper className={fixedHeightPaper}>
                   <Typography component="p" variant="h4">
-                    {total}
+                    { total }
                   </Typography>
                   <Typography color="textSecondary">
                     ending portfolio value after {years} years
@@ -287,7 +331,7 @@ function App() {
                         top: 16,
                         right: 16,
                         bottom: 24,
-                        left: 24,
+                        left: 0,
                       }}
                     >
                       <XAxis dataKey="year" stroke={theme.palette.text.secondary}>
@@ -301,7 +345,7 @@ function App() {
                       <YAxis stroke={theme.palette.text.secondary}
                         tickFormatter={function (value) {
                           if (typeof value === "number") {
-                            return "$" + new Intl.NumberFormat('en').format(value);
+                            return abbreviateNumber(value);
                           }
                           else {
                             return value;
@@ -314,7 +358,7 @@ function App() {
                         itemStyle={{ color: theme.palette.text.primary }}
                         formatter={function (value, name) {
                           if (typeof value === "number") {
-                            return ["$" + new Intl.NumberFormat('en').format(value), 'Value'];
+                            return [new Intl.NumberFormat('en', { style: 'currency', currency: 'USD' }).format(value), 'Value'];
                           }
                           else {
                             return ["$" + value, 'Value'];
@@ -328,6 +372,9 @@ function App() {
                     </LineChart>
                   </ResponsiveContainer>
                 </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                  <Table data={data}/>
               </Grid>
             </>
           )}
